@@ -1,7 +1,7 @@
 
 // import components needed to build app
 import { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, ImageBackground, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, TextInput, ImageBackground, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 
 const Start = ({ navigation }) => {
     const [name, setName] = useState('');
@@ -9,12 +9,17 @@ const Start = ({ navigation }) => {
     const colors = ['#090C08', '#474056', '#8A95A5', '#B9C6AE'];
 
     return (
+        // render background image
         <ImageBackground source={require('../imgs/Background Image.png')} style={styles.bgImage} resizeMode='cover'>
             <Text style={styles.title}>QuickChat</Text>
             {/* Input and color choosing box */}
             <View style={styles.container}>
                 {/* Input username */}
                 <TextInput
+                    accessible={true}
+                    accessibilityLabel='Input Username'
+                    accessibilityHint='Choose your username'
+                    accessibilityRole='text'
                     style={styles.textInput}
                     value={name}
                     onChangeText={setName}
@@ -25,6 +30,10 @@ const Start = ({ navigation }) => {
                 <View style={styles.colorSelect}>
                     {colors.map((color, index) => (
                         <TouchableOpacity
+                            accessible={true}
+                            accessibilityLabel='Color Buttons'
+                            accessibilityHint='Choose chat background color'
+                            accessibilityRole='button'
                             style={[styles.colorButtons, { backgroundColor: color }, background === color && styles.selected]}
                             key={index}
                             onPress={() => setBackground(color)} />
@@ -32,10 +41,16 @@ const Start = ({ navigation }) => {
                 </View>
                 {/* Start Chatting Button */}
                 <TouchableOpacity
+                    accessible={true}
+                    accessibilityLabel='Start Chatting'
+                    accessibilityHint='Sends you to the chat page'
+                    accessibilityRole='button'
                     style={styles.button}
                     onPress={() => navigation.navigate('Chat', { name: name, background: background })}>
                     <Text style={styles.chatButton}>Start Chatting</Text>
                 </TouchableOpacity>
+                {Platform.OS === 'android' ? <KeyboardAvoidingView behavior="height" /> : null}
+                {Platform.OS === 'ios' ? <KeyboardAvoidingView behavior="padding" /> : null}
             </View>
         </ImageBackground>
     );
