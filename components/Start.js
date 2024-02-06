@@ -1,12 +1,34 @@
 
 // import components needed to build app
 import { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, ImageBackground, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+    StyleSheet,
+    View, Text, TextInput,
+    ImageBackground,
+    TouchableOpacity,
+    KeyboardAvoidingView,
+    Platform, Alert
+} from 'react-native';
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 const Start = ({ navigation }) => {
+    const auth = getAuth();
+
     const [name, setName] = useState('');
     const [background, setBackground] = useState('');
     const colors = ['#090C08', '#474056', '#8A95A5', '#B9C6AE'];
+
+    // User sign-in
+    const signInUser = () => {
+        signInAnonymously(auth)
+            .then(result => {
+                navigation.navigate("Chat", { name: name, background: background, userID: result.user.uid });
+                Alert.alert("Signed in Successfully");
+            })
+            .catch((error) => {
+                Alert.alert("Unable to sign in, try again later.");
+            })
+    }
 
     return (
         // render background image
@@ -23,7 +45,7 @@ const Start = ({ navigation }) => {
                     style={styles.textInput}
                     value={name}
                     onChangeText={setName}
-                    placeholder='Your Name'
+                    placeholder='Enter Your Name'
                 />
                 <Text style={styles.chooseBgColor}>Choose Background Color</Text>
                 {/* Choose Background Color buttons */}
@@ -46,7 +68,7 @@ const Start = ({ navigation }) => {
                     accessibilityHint='Sends you to the chat page'
                     accessibilityRole='button'
                     style={styles.button}
-                    onPress={() => navigation.navigate('Chat', { name: name, background: background })}>
+                    onPress={signInUser}>
                     <Text style={styles.chatButton}>Start Chatting</Text>
                 </TouchableOpacity>
                 {Platform.OS === 'android' ? <KeyboardAvoidingView behavior="height" /> : null}
