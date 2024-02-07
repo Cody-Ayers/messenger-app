@@ -2,11 +2,15 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+// Import netInfo
+import { useNetInfo } from '@react-native-community/netinfo';
+import { useEffect } from 'react';
+
 // Import Firebase and Firestore
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, disableNetwork, enableNetwork } from "firebase/firestore";
 
-import { LogBox } from 'react-native';
+import { LogBox, Alert } from 'react-native';
 LogBox.ignoreLogs(["AsyncStorage has been extracted from"]);
 
 // import screens that we want to navigate to
@@ -17,6 +21,9 @@ const Stack = createNativeStackNavigator();
 
 // Apps main Chat component that renders the chat UI
 const App = () => {
+    // check connection status
+    const connectionStatus = useNetInfo();
+    // Cloud Firebase config
     const firebaseConfig = {
         apiKey: "AIzaSyCylyi0WLkEsg90CI4x2skfbDMh-LQ8AsE",
         authDomain: "quickchatapp-662b7.firebaseapp.com",
@@ -33,12 +40,22 @@ const App = () => {
     // Initialize Cloud Firestore
     const db = getFirestore(app);
 
+    // Network Status
+    useEffect(() => {
+        if (connectionStatus.isConnected === false) {
+            Alert.alert("Connection Lost!");
+            disableNetwork(db);
+        } else if (connectionStatus.isConnected === true) {
+            enableNetwork(db);
+        }
+    }, [connectionStatus.isConnected]);
+
     return (
         <NavigationContainer>
             <Stack.Navigator initialRouteName="Start">
                 <Stack.Screen name="Start" component={Start} />
                 <Stack.Screen name="Chat">
-                    {props => <Chat db={db} {...props} />}
+                    {props => <Chat isConnected={connectionStatus.isConnected} db={db} {...props} />}
                 </Stack.Screen>
             </Stack.Navigator>
         </NavigationContainer>
