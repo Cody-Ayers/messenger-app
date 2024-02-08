@@ -74,7 +74,7 @@ const Chat = ({ route, navigation, db, isConnected, storage }) => {
     setMessages(JSON.parse(cachedMessages));
   };
 
-  // on send
+  // On send
   const onSend = (newMessages) => {
     addDoc(collection(db, "messages"), newMessages[0]);
   };
@@ -110,16 +110,14 @@ const Chat = ({ route, navigation, db, isConnected, storage }) => {
         <TouchableOpacity
           style={{ backgroundColor: "#FF0", borderRadius: 10, margin: 5 }}
           onPress={async () => {
-            if (soundObject) soundObject.unloadAsync();
             const { sound } = await Audio.Sound.createAsync({
               uri: props.currentMessage.audio,
             });
-            soundObject = sound;
             await sound.playAsync();
           }}
         >
-          <Text style={{ testAlign: "center", color: "black", padding: 5 }}>
-            Play Recording
+          <Text style={{ textAlign: "center", color: "black", padding: 5 }}>
+            Play Sound
           </Text>
         </TouchableOpacity>
       </View>

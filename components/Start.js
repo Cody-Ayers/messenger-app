@@ -133,6 +133,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     top: 5,
     borderColor: "#757083",
+    textAlign: "center",
   },
   chooseBgColor: {
     flex: 1,

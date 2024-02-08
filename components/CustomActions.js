@@ -119,54 +119,48 @@ const CustomActions = ({
   };
 
   const startRecording = async () => {
-    const startRecording = async () => {
-      try {
-        let permissions = await Audio.requestPermissionsAsync();
-        if (permissions?.granted) {
-          // iOS specific config to allow recording on iPhone devices
-          await Audio.setAudioModeAsync({
-            allowsRecordingIOS: true,
-            playsInSilentModeIOS: true,
+    try {
+      let permissions = await Audio.requestPermissionsAsync();
+      if (permissions?.granted) {
+        // iOS specific config to allow recording on iPhone devices
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
+        Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY)
+          .then((results) => {
+            return results.recording;
+          })
+          .then((recording) => {
+            recordingObject = recording;
+            Alert.alert(
+              "You are recording...",
+              undefined,
+              [
+                {
+                  text: "Cancel",
+                  onPress: () => {
+                    stopRecording();
+                  },
+                },
+                {
+                  text: "Stop and Send",
+                  onPress: () => {
+                    sendRecordedSound();
+                  },
+                },
+              ],
+              { cancelable: false }
+            );
           });
-
-          Audio.Recording.createAsync(
-            Audio.RecordingOptionsPresets.HIGH_QUALITY
-          )
-            .then((result) => {
-              return result.recording;
-            })
-            .then((recording) => {
-              recordingObject = recording;
-              Alert.alert(
-                "You are recording...",
-                undefined,
-                [
-                  {
-                    text: "Cancel",
-                    onPress: () => {
-                      stopRecording();
-                    },
-                  },
-                  {
-                    text: "Stop and Send",
-                    onPress: () => {
-                      sendRecordedSound();
-                    },
-                  },
-                ],
-                { cancelable: false }
-              );
-            });
-        }
-      } catch (err) {
-        Alert.alert("Failed to record!");
       }
-    };
+    } catch (err) {
+      Alert.alert("Failed to record!");
+    }
   };
 
   const stopRecording = async () => {
     await Audio.setAudioModeAsync({
-      // iOS specific config to stop recording on iPhone devices
       allowsRecordingIOS: false,
       playsInSilentModeIOS: false,
     });
