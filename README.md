@@ -1,10 +1,21 @@
 # Messenger-APP
 
+<br>
+
+<img src="/imgs/welcome-screen.png">
+<img src="/imgs/sign-in-success.png">
+<img src="/imgs/chat-screen.png">
+<img src="/imgs/shared-location.png">
+
 ## App Description
+
+<br>
 
 This is a chat app for use on mobile devices created using React Native
 
 ## Dependencies and Libraries needed
+
+<br>
 
 - React Native
 - Expo and Expo Go(mobile)
@@ -29,6 +40,8 @@ expo install expo-av
 ```
 
 ## Run QuickChat on your device
+
+<br>
 
 ### Node.js
 
@@ -72,6 +85,8 @@ Google Firebase is what this app uses to store the data(messages, images and oth
 <br>
 
 ### Necessary Libraries
+
+<br>
 
 Run the following commands in the project terminal to ensure you have all the correct libraries for the app to function:
 
