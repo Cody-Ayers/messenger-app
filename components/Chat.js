@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Bubble, GiftedChat, InputToolbar } from "react-native-gifted-chat";
 import {
   collection,
@@ -165,7 +166,11 @@ const Chat = ({ route, navigation, db, isConnected, storage }) => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: background }]}>
+    // Bottom safe area keeps the message input above the iPhone home indicator
+    <SafeAreaView
+      edges={["bottom"]}
+      style={[styles.container, { backgroundColor: background }]}
+    >
       <GiftedChat
         messages={messages}
         renderBubble={renderBubble}
@@ -180,7 +185,7 @@ const Chat = ({ route, navigation, db, isConnected, storage }) => {
         }}
         keyboardAvoidingViewProps={{ keyboardVerticalOffset: headerHeight }}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 

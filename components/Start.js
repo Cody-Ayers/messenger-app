@@ -131,7 +131,6 @@ const styles = StyleSheet.create({
     fontWeight: "300",
     color: "#757083",
     width: "88%",
-    opacity: 0.5,
     padding: 15,
     borderWidth: 1,
     marginTop: "8%",
