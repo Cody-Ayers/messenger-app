@@ -16,6 +16,25 @@ import { createAudioPlayer } from "expo-audio";
 
 import CustomActions from "./CustomActions";
 
+// Photos and audio from before the move to Cloudinary were stored in Firebase
+// Storage, which no longer serves them; drop those files so the chat doesn't
+// show blank bubbles, and hide messages that have nothing else left to show
+const isLegacyFirebaseFile = (url) =>
+  typeof url === "string" && url.includes("firebasestorage.googleapis.com");
+
+const withoutLegacyFiles = (messages) =>
+  messages
+    .map((message) => {
+      const cleaned = { ...message };
+      if (isLegacyFirebaseFile(cleaned.image)) delete cleaned.image;
+      if (isLegacyFirebaseFile(cleaned.audio)) delete cleaned.audio;
+      return cleaned;
+    })
+    .filter(
+      (message) =>
+        message.text || message.image || message.audio || message.location
+    );
+
 const Chat = ({ route, navigation, db, isConnected }) => {
   const [messages, setMessages] = useState([]);
   const { name, background, userID } = route.params;
@@ -39,8 +58,9 @@ const Chat = ({ route, navigation, db, isConnected }) => {
             createdAt: new Date(doc.data().createdAt.toMillis()),
           });
         });
-        cachedMessages(newMessages);
-        setMessages(newMessages);
+        const visibleMessages = withoutLegacyFiles(newMessages);
+        cachedMessages(visibleMessages);
+        setMessages(visibleMessages);
       });
     } else loadCachedMessages();
 
@@ -64,7 +84,7 @@ const Chat = ({ route, navigation, db, isConnected }) => {
   const loadCachedMessages = async () => {
     try {
       const cachedMessages = (await AsyncStorage.getItem("messages")) || "[]";
-      setMessages(JSON.parse(cachedMessages));
+      setMessages(withoutLegacyFiles(JSON.parse(cachedMessages)));
     } catch (error) {
       console.log(error.message);
       setMessages([]);
