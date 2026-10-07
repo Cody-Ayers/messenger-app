@@ -1,104 +1,72 @@
-# Messenger-APP
+# QuickChat
 
-<br>
+A cross-platform mobile chat app built with React Native and Expo. Users pick a
+name and a chat background, then send text, photos (from the library or the
+camera), their current location and voice recordings. Messages sync in real time
+through Firebase, and the last messages are cached on the device so the chat can
+still be read offline.
 
-<img src="/imgs/welcome-screen.png">
-<img src="/imgs/sign-in-success.png">
-<img src="/imgs/chat-screen.png">
-<img src="/imgs/shared-location.png">
+<p>
+  <img src="imgs/welcome-screen.png" width="200" alt="Start screen">
+  <img src="imgs/chat-screen.png" width="200" alt="Chat screen">
+  <img src="imgs/shared-location.png" width="200" alt="Shared location">
+</p>
 
-## App Description
+## Features
 
-<br>
+- Anonymous sign-in with Firebase Authentication (kept between launches)
+- Real-time messages with Cloud Firestore
+- Send photos from the library or camera, your location (shown on a map), and voice recordings
+- Images and audio stored on Cloudinary
+- Offline mode: cached messages are shown and the input is hidden while disconnected
 
-This is a chat app for use on mobile devices created using React Native
+## Built with
 
-## Dependencies and Libraries needed
+- React Native 0.86, React 19, Expo SDK 57
+- React Navigation 7
+- react-native-gifted-chat
+- Firebase (Authentication, Cloud Firestore)
+- Cloudinary (image and audio uploads)
+- expo-image-picker, expo-location, expo-audio, react-native-maps
 
-<br>
+## Running the app
 
-- React Native
-- Expo and Expo Go(mobile)
-- XCode
-- Android Studio / Emulator
-- Google Firebase
+You need [Node.js](https://nodejs.org/) 24 (the version is pinned in `.nvmrc`)
+and the **Expo Go** app on your phone
+([iOS](https://apps.apple.com/app/expo-go/id982107779) /
+[Android](https://play.google.com/store/apps/details?id=host.exp.exponent)).
 
-<br>
-
+```bash
+npm install
+npx expo start
 ```
-npm install --save @react-navigation/native @react-navigation/native-stack
-npm install react-native-gifted-chat --save
-npm install firebase --save
-expo install react-native-screens react-native-safe-area-context
-expo install @react-native-async-storage/async-storage
-expo install @react-native-community/netinfo
-expo install expo-image-picker
-expo install expo-media-library
-expo install expo-location
-expo install react-native-maps
-expo install expo-av
-```
 
-## Run QuickChat on your device
+Scan the QR code with your phone (on the same Wi-Fi as your computer) to open the
+app in Expo Go. Press `i` or `a` in the terminal to open the iOS Simulator or an
+Android emulator instead.
 
-<br>
+## Using your own backend
 
-### Node.js
+The app is configured for my Firebase and Cloudinary accounts. To use your own:
 
-Install the latest version of node by running `nvm install lts` in your project file in your terminal
+1. **Firebase:** create a project at [firebase.google.com](https://firebase.google.com/),
+   enable **Anonymous** sign-in under Authentication, and create a Cloud Firestore
+   database. Use rules that only allow signed-in users:
 
-<br>
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /messages/{message} {
+         allow read, create: if request.auth != null;
+       }
+     }
+   }
+   ```
 
-### Expo
+   Then register a web app and replace `firebaseConfig` in `App.js`.
 
-Install Expo globally In your project terminal also run `npm install -g expo-cli`
-
-You then need to install Expo Go on your personal device so you can test your app as changes are made.
-
-You can find links to those here:
-[iOS](https://apps.apple.com/us/app/expo-go/id982107779)
-[Android](https://play.google.com/store/apps/details?id=host.exp.exponent&hl=en_US&gl=US&pli=1)
-
-Don't forget to sign-up for an [Expo Account](expo.dev)
-
-<br>
-
-### Google Firebase
-
-Google Firebase is what this app uses to store the data(messages, images and other files) from the chat app. The instructions below will walk you though how to set up your own Google Firbase.
-
-1. In your web browser go to: [Google Firebase](https://firebase.google.com/). If you aren't already signed in with a google account (check the upper right hand corner), sign in there.
-2. Click on the **_Create a Project_** choose the name you want for your project and click **_Continue_**
-3. Wait until your project is created and click **_Continue_**
-4. On the left panel click on **_Build_** then click **_Firestore Database_** from the dropdown, click **_Create Database_**
-5. Be sure that **_Start in production mode_** is selected and click **_Enable_**
-6. Click on the **_Rules_** tab and change the code from: `allow read, write: if false;` to: `allow read, write, if true;`, (This allows you to add messages sent in chat to your storage) be sure to click the **_Publish_** button after.
-7. Again on the left panel, click on **_Build_**, **_Storage_** when you see the **_Get Started_** button click and continue.
-8. Be sure **_Start in production mode_** is selected and click **\__Next_**
-9. Again go to the **_Rules_** tab and change the code as follows: `allow read, write: if false;` to `allow read, write, if true;`, (This allows you to add images sent in chat to your storage) and be sure to click the **\__Publish_** button when done.
-10. Finally, on the left panel click **_Project Overview_** click on the web icon **</BR>** symbol. Click **_Register app_**
-11. You then need to copy these pieces of code that is provided:
-
-- `const firebaseConfig = { all of the code in here! };`
-- `const firebaseConfig = { replace everything in here! };`
-
-<br>
-
-### Necessary Libraries
-
-<br>
-
-Run the following commands in the project terminal to ensure you have all the correct libraries for the app to function:
-
-```
-npm install --save @react-navigation/native @react-navigation/native-stack
-npm install react-native-gifted-chat --save
-npm install firebase --save
-expo install react-native-screens react-native-safe-area-context
-expo install @react-native-async-storage/async-storage
-expo install @react-native-community/netinfo
-expo install expo-image-picker
-expo install expo-media-library
-expo install expo-location
-expo install react-native-maps
-```
+2. **Cloudinary:** create a free account at [cloudinary.com](https://cloudinary.com/)
+   and an **unsigned** upload preset (Settings → Upload → Upload presets). Limit it
+   to a folder, image and audio formats, and a maximum file size. Then set
+   `CLOUDINARY_CLOUD_NAME` and `CLOUDINARY_UPLOAD_PRESET` in `utils/uploadFile.js`.
