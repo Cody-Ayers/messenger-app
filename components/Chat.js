@@ -16,7 +16,7 @@ import { createAudioPlayer } from "expo-audio";
 
 import CustomActions from "./CustomActions";
 
-const Chat = ({ route, navigation, db, isConnected, storage }) => {
+const Chat = ({ route, navigation, db, isConnected }) => {
   const [messages, setMessages] = useState([]);
   const { name, background, userID } = route.params;
   const soundObject = useRef(null);
@@ -94,8 +94,6 @@ const Chat = ({ route, navigation, db, isConnected, storage }) => {
     return (
       <CustomActions
         {...props}
-        userID={userID}
-        storage={storage}
         onSend={sendCustomMessage}
       />
     );

@@ -7,14 +7,17 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { useEffect } from "react";
 
 // Import Firebase and Firestore
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getFirestore,
   disableNetwork,
   enableNetwork,
 } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
-import { initializeAuth, getReactNativePersistence } from "firebase/auth";
+import {
+  initializeAuth,
+  getAuth,
+  getReactNativePersistence,
+} from "firebase/auth";
 import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
 
 import { LogBox, Alert } from "react-native";
@@ -37,14 +40,19 @@ const firebaseConfig = {
   measurementId: "G-7K5X3J1C1N",
 };
 
-// Initialize Firebase, Cloud Firestore and storage once, outside the component
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase and Cloud Firestore once, outside the component
+// (getApps() guards against setting up twice when the code reloads in development)
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
 // Keep the anonymous sign-in between app launches (getAuth() in Start reuses this)
-initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage),
-});
+try {
+  initializeAuth(app, {
+    persistence: getReactNativePersistence(ReactNativeAsyncStorage),
+  });
+} catch (error) {
+  // Auth was already set up on a previous reload
+  getAuth(app);
+}
 
 // Apps main Chat component that renders the chat UI
 const App = () => {
@@ -71,7 +79,6 @@ const App = () => {
               <Chat
                 isConnected={connectionStatus.isConnected}
                 db={db}
-                storage={storage}
                 {...props}
               />
             )}

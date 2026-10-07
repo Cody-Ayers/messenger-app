@@ -1,6 +1,5 @@
 import { TouchableOpacity, Text, View, StyleSheet, Alert } from "react-native";
 import { useActionSheet } from "@expo/react-native-action-sheet";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   useAudioRecorder,
   RecordingPresets,
@@ -11,12 +10,12 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 
+import { uploadFile } from "../utils/uploadFile";
+
 const CustomActions = ({
   wrapperStyle,
   iconTextStyle,
   onSend,
-  storage,
-  userID,
 }) => {
   const actionSheet = useActionSheet();
   // The recorder is released automatically when the component unmounts
@@ -56,21 +55,13 @@ const CustomActions = ({
     );
   };
 
-  // Upload a local file to Firebase Storage and return its download URL
-  const uploadFile = async (fileURI) => {
-    const newUploadRef = ref(storage, generateReference(fileURI));
-    const response = await fetch(fileURI);
-    const blob = await response.blob();
-    const snapshot = await uploadBytes(newUploadRef, blob);
-    return getDownloadURL(snapshot.ref);
-  };
-
   // Upload and Send Image
   const uploadAndSendImage = async (imageURI) => {
     try {
       const imageURL = await uploadFile(imageURI);
       onSend({ image: imageURL });
     } catch (error) {
+      console.warn("Image upload failed:", error.message, imageURI);
       Alert.alert("Couldn't send the image. Please try again.");
     }
   };
@@ -116,6 +107,7 @@ const CustomActions = ({
       const soundURL = await uploadFile(recordingURI);
       onSend({ audio: soundURL });
     } catch (error) {
+      console.warn("Audio upload failed:", error.message, recordingURI);
       Alert.alert("Couldn't send the recording. Please try again.");
     }
   };
@@ -160,13 +152,6 @@ const CustomActions = ({
     await recorder.stop();
     await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: false });
     return recorder.uri;
-  };
-
-  // Reference Generator
-  const generateReference = (uri) => {
-    const timeStamp = new Date().getTime();
-    const imageName = uri.split("/")[uri.split("/").length - 1];
-    return `${userID}-${timeStamp}-${imageName}`;
   };
 
   return (
