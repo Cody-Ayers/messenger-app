@@ -1,8 +1,12 @@
-import { useEffect } from "react";
 import { TouchableOpacity, Text, View, StyleSheet, Alert } from "react-native";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { Audio } from "expo-av";
+import {
+  useAudioRecorder,
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+} from "expo-audio";
 
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
@@ -15,13 +19,8 @@ const CustomActions = ({
   userID,
 }) => {
   const actionSheet = useActionSheet();
-  let recordingObject = null;
-
-  useEffect(() => {
-    return () => {
-      if (recordingObject) recordingObject.stopAndUnloadAsync();
-    };
-  }, []);
+  // The recorder is released automatically when the component unmounts
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
   const onActionPress = () => {
     const options = [
@@ -57,16 +56,23 @@ const CustomActions = ({
     );
   };
 
+  // Upload a local file to Firebase Storage and return its download URL
+  const uploadFile = async (fileURI) => {
+    const newUploadRef = ref(storage, generateReference(fileURI));
+    const response = await fetch(fileURI);
+    const blob = await response.blob();
+    const snapshot = await uploadBytes(newUploadRef, blob);
+    return getDownloadURL(snapshot.ref);
+  };
+
   // Upload and Send Image
   const uploadAndSendImage = async (imageURI) => {
-    const uniqueRefString = generateReference(imageURI);
-    const newUploadRef = ref(storage, uniqueRefString);
-    const response = await fetch(imageURI);
-    const blob = await response.blob();
-    uploadBytes(newUploadRef, blob).then(async (snapshot) => {
-      const imageURL = await getDownloadURL(snapshot.ref);
+    try {
+      const imageURL = await uploadFile(imageURI);
       onSend({ image: imageURL });
-    });
+    } catch (error) {
+      Alert.alert("Couldn't send the image. Please try again.");
+    }
   };
 
   // Pick an image from library
@@ -75,8 +81,7 @@ const CustomActions = ({
     if (permissions?.granted) {
       let result = await ImagePicker.launchImageLibraryAsync();
       if (!result.canceled) await uploadAndSendImage(result.assets[0].uri);
-      else Alert.alert("Permissions haven't been granted");
-    }
+    } else Alert.alert("Permissions haven't been granted.");
   };
 
   // Taking a Photo
@@ -85,8 +90,7 @@ const CustomActions = ({
     if (permissions?.granted) {
       let result = await ImagePicker.launchCameraAsync();
       if (!result.canceled) await uploadAndSendImage(result.assets[0].uri);
-      else Alert.alert("Permissions haven't been granted.");
-    }
+    } else Alert.alert("Permissions haven't been granted.");
   };
 
   // send location
@@ -107,64 +111,55 @@ const CustomActions = ({
 
   // Record Audio
   const sendRecordedSound = async () => {
-    await stopRecording();
-    const uniqueRefString = generateReference(recordingObject.getURI());
-    const newUploadRef = ref(storage, uniqueRefString);
-    const response = await fetch(recordingObject.getURI());
-    const blob = await response.blob();
-    uploadBytes(newUploadRef, blob).then(async (snapshot) => {
-      const soundURL = await getDownloadURL(snapshot.ref);
+    const recordingURI = await stopRecording();
+    try {
+      const soundURL = await uploadFile(recordingURI);
       onSend({ audio: soundURL });
-    });
+    } catch (error) {
+      Alert.alert("Couldn't send the recording. Please try again.");
+    }
   };
 
   const startRecording = async () => {
     try {
-      let permissions = await Audio.requestPermissionsAsync();
-      if (permissions?.granted) {
-        // iOS specific config to allow recording on iPhone devices
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-        });
-        Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY)
-          .then((results) => {
-            return results.recording;
-          })
-          .then((recording) => {
-            recordingObject = recording;
-            Alert.alert(
-              "You are recording...",
-              undefined,
-              [
-                {
-                  text: "Cancel",
-                  onPress: () => {
-                    stopRecording();
-                  },
-                },
-                {
-                  text: "Stop and Send",
-                  onPress: () => {
-                    sendRecordedSound();
-                  },
-                },
-              ],
-              { cancelable: false }
-            );
-          });
+      const permissions = await requestRecordingPermissionsAsync();
+      if (!permissions?.granted) {
+        Alert.alert("Permissions haven't been granted.");
+        return;
       }
+      // iOS needs recording enabled on the audio session (and plays in silent mode)
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+      Alert.alert(
+        "You are recording...",
+        undefined,
+        [
+          {
+            text: "Cancel",
+            onPress: () => {
+              stopRecording();
+            },
+          },
+          {
+            text: "Stop and Send",
+            onPress: () => {
+              sendRecordedSound();
+            },
+          },
+        ],
+        { cancelable: false }
+      );
     } catch (err) {
       Alert.alert("Failed to record!");
     }
   };
 
+  // Stops the recorder and returns the local file uri of the recording
   const stopRecording = async () => {
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      playsInSilentModeIOS: false,
-    });
-    await recordingObject.stopAndUnloadAsync();
+    await recorder.stop();
+    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: false });
+    return recorder.uri;
   };
 
   // Reference Generator

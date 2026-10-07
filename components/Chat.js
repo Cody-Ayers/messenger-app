@@ -1,12 +1,6 @@
-import { useState, useEffect } from "react";
-import {
-  StyleSheet,
-  View,
-  KeyboardAvoidingView,
-  Platform,
-  Text,
-  TouchableOpacity,
-} from "react-native";
+import { useState, useEffect, useRef } from "react";
+import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { Bubble, GiftedChat, InputToolbar } from "react-native-gifted-chat";
 import {
   collection,
@@ -17,26 +11,23 @@ import {
 } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MapView from "react-native-maps";
-import { Audio } from "expo-av";
+import { createAudioPlayer } from "expo-audio";
 
 import CustomActions from "./CustomActions";
 
 const Chat = ({ route, navigation, db, isConnected, storage }) => {
   const [messages, setMessages] = useState([]);
   const { name, background, userID } = route.params;
-  let soundObject = null;
+  const soundObject = useRef(null);
+  // Tells the chat's keyboard handling how tall the navigation header is
+  const headerHeight = useHeaderHeight();
 
   // setting messages to be displayed
-  let unsubChat;
   useEffect(() => {
     navigation.setOptions({ title: name });
 
+    let unsubChat = null;
     if (isConnected === true) {
-      // unregister current onSnapshot() listener to avoid registering multiple listeners when
-      // useEffect code is re-executed.
-      if (unsubChat) unsubChat();
-      unsubChat = null;
-
       const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
       unsubChat = onSnapshot(q, (documentSnapshot) => {
         let newMessages = [];
@@ -52,10 +43,10 @@ const Chat = ({ route, navigation, db, isConnected, storage }) => {
       });
     } else loadCachedMessages();
 
-    // Clean up cody
+    // Clean up the listener and any sound that is still loaded
     return () => {
       if (unsubChat) unsubChat();
-      if (soundObject) soundObject.unloadAsync();
+      if (soundObject.current) soundObject.current.remove();
     };
   }, [isConnected]);
 
@@ -70,8 +61,13 @@ const Chat = ({ route, navigation, db, isConnected, storage }) => {
 
   // Load cached messages
   const loadCachedMessages = async () => {
-    const cachedMessages = (await AsyncStorage.getItem("messages")) || [];
-    setMessages(JSON.parse(cachedMessages));
+    try {
+      const cachedMessages = (await AsyncStorage.getItem("messages")) || "[]";
+      setMessages(JSON.parse(cachedMessages));
+    } catch (error) {
+      console.log(error.message);
+      setMessages([]);
+    }
   };
 
   // On send
@@ -79,9 +75,29 @@ const Chat = ({ route, navigation, db, isConnected, storage }) => {
     addDoc(collection(db, "messages"), newMessages[0]);
   };
 
+  // Send an image, location or audio message from the action button
+  const sendCustomMessage = (content) => {
+    onSend([
+      {
+        _id: `${userID}-${Date.now()}`,
+        text: "",
+        createdAt: new Date(),
+        user: { _id: userID, name: name },
+        ...content,
+      },
+    ]);
+  };
+
   // Render action button
   const renderCustomActions = (props) => {
-    return <CustomActions userID={userID} storage={storage} {...props} />;
+    return (
+      <CustomActions
+        {...props}
+        userID={userID}
+        storage={storage}
+        onSend={sendCustomMessage}
+      />
+    );
   };
 
   // Render MapView
@@ -109,11 +125,12 @@ const Chat = ({ route, navigation, db, isConnected, storage }) => {
       <View {...props}>
         <TouchableOpacity
           style={{ backgroundColor: "#FF0", borderRadius: 10, margin: 5 }}
-          onPress={async () => {
-            const { sound } = await Audio.Sound.createAsync({
-              uri: props.currentMessage.audio,
-            });
-            await sound.playAsync();
+          onPress={() => {
+            // release the previous sound before playing a new one
+            if (soundObject.current) soundObject.current.remove();
+            const player = createAudioPlayer({ uri: props.currentMessage.audio });
+            soundObject.current = player;
+            player.play();
           }}
         >
           <Text style={{ textAlign: "center", color: "black", padding: 5 }}>
@@ -161,14 +178,8 @@ const Chat = ({ route, navigation, db, isConnected, storage }) => {
           _id: userID,
           name: name,
         }}
+        keyboardAvoidingViewProps={{ keyboardVerticalOffset: headerHeight }}
       />
-      {/*  */}
-      {Platform.OS === "android" ? (
-        <KeyboardAvoidingView behavior="height" />
-      ) : null}
-      {Platform.OS === "ios" ? (
-        <KeyboardAvoidingView behavior="padding" />
-      ) : null}
     </View>
   );
 };

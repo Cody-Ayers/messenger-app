@@ -22,14 +22,18 @@ const Start = ({ navigation }) => {
 
   // User sign-in
   const signInUser = () => {
+    if (name.trim() === "") {
+      Alert.alert("Please enter your name.");
+      return;
+    }
+
     signInAnonymously(auth)
       .then((result) => {
         navigation.navigate("Chat", {
-          name: name,
+          name: name.trim(),
           background: background,
           userID: result.user.uid,
         });
-        Alert.alert("Signed in Successfully");
       })
       .catch((error) => {
         Alert.alert("Unable to sign in, try again later.");
@@ -63,9 +67,10 @@ const Start = ({ navigation }) => {
           {colors.map((color, index) => (
             <TouchableOpacity
               accessible={true}
-              accessibilityLabel="Color Buttons"
+              accessibilityLabel={`Background color ${index + 1}`}
               accessibilityHint="Choose chat background color"
               accessibilityRole="button"
+              accessibilityState={{ selected: background === color }}
               style={[
                 styles.colorButtons,
                 { backgroundColor: color },
@@ -126,7 +131,7 @@ const styles = StyleSheet.create({
     fontWeight: "300",
     color: "#757083",
     width: "88%",
-    opacity: 50,
+    opacity: 0.5,
     padding: 15,
     borderWidth: 1,
     marginTop: "8%",
@@ -155,9 +160,9 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     margin: 10,
   },
-  selectedColor: {
-    borderColor: "blue",
-    borderWidth: "2",
+  selected: {
+    borderColor: "#757083",
+    borderWidth: 3,
   },
   button: {
     backgroundColor: "#757083",
